@@ -26,6 +26,7 @@ public class TerminalSession {
 
     private final int columns;
     private final int rows;
+    private String name;
 
     private PtyProcess process;
     private JediTerminal terminal;
@@ -40,7 +41,11 @@ public class TerminalSession {
     public TerminalSession(int columns, int rows) {
         this.columns = columns;
         this.rows = rows;
+        this.name = null; // set externally
     }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
     public void start() throws IOException {
         String[] cmd;

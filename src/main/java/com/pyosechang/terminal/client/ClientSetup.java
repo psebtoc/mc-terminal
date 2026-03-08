@@ -41,7 +41,9 @@ public class ClientSetup {
                 if (mc.screen instanceof TerminalScreen) {
                     mc.setScreen(null);
                 } else {
-                    mc.setScreen(new TerminalScreen(TerminalSessionManager.getOrCreate()));
+                    // Ensure at least one tab exists
+                    TerminalSessionManager.getOrCreate();
+                    mc.setScreen(new TerminalScreen());
                 }
             }
         }
