@@ -66,13 +66,20 @@ public class TerminalSession {
         env.remove("CLAUDECODE");
         env.remove("CLAUDE_CODE_SESSION");
 
-        process = new PtyProcessBuilder()
+        String startDir = TerminalConfig.getStartDirectory();
+
+        PtyProcessBuilder builder = new PtyProcessBuilder()
                 .setCommand(cmd)
                 .setEnvironment(env)
                 .setInitialColumns(columns)
                 .setInitialRows(rows)
-                .setConsole(false)
-                .start();
+                .setConsole(false);
+
+        if (startDir != null) {
+            builder.setDirectory(startDir);
+        }
+
+        process = builder.start();
 
         outputStream = process.getOutputStream();
 

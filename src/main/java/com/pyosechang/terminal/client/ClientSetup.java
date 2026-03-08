@@ -4,10 +4,12 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.pyosechang.terminal.terminal.TerminalSessionManager;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.lwjgl.glfw.GLFW;
 
@@ -23,6 +25,14 @@ public class ClientSetup {
     public static void init(FMLJavaModLoadingContext context) {
         context.getModEventBus().addListener(ClientSetup::registerKeyMappings);
         MinecraftForge.EVENT_BUS.register(new ClientTickHandler());
+
+        // Register config screen for Mods menu
+        ModLoadingContext.get().registerExtensionPoint(
+                ConfigScreenHandler.ConfigScreenFactory.class,
+                () -> new ConfigScreenHandler.ConfigScreenFactory(
+                        (mc, parentScreen) -> new TerminalConfigScreen(parentScreen)
+                )
+        );
     }
 
     private static void registerKeyMappings(RegisterKeyMappingsEvent event) {
