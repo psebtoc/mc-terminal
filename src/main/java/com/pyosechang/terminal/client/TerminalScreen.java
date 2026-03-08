@@ -14,10 +14,10 @@ public class TerminalScreen extends Screen {
 
     // Layout
     private static final int TAB_BAR_HEIGHT = 16;
-    private static final int PADDING = 2;
+    private static final int PADDING = 10;
 
     // Colors matching dark terminal theme
-    private static final int SCREEN_BG       = 0xFF000000;
+    private static final int SCREEN_BG       = 0xFF0C0C0C;
     private static final int TERM_BG          = 0xFF0C0C0C;
     private static final int TAB_BAR_BG       = 0xFF181818;
     private static final int TAB_ACTIVE_BG    = 0xFF0C0C0C;
@@ -69,13 +69,13 @@ public class TerminalScreen extends Screen {
         }
 
         int availW = this.width - PADDING * 2;
-        int availH = this.height - PADDING - TAB_BAR_HEIGHT;
+        int availH = this.height - PADDING * 2 - TAB_BAR_HEIGHT;
 
         termColumns = availW / TerminalRenderer.CELL_WIDTH;
         termRows = availH / TerminalRenderer.CELL_HEIGHT;
 
         termX = PADDING;
-        termY = TAB_BAR_HEIGHT;
+        termY = TAB_BAR_HEIGHT + PADDING;
 
         TerminalSession session = TerminalSessionManager.getActive();
         if (session != null && session.isAlive()) {
