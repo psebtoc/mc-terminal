@@ -33,6 +33,7 @@ public class InputStreamDataStream implements TerminalDataStream {
         if (c == -1) {
             throw new EOF();
         }
+
         return (char) c;
     }
 
