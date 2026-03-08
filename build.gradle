@@ -1,0 +1,100 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+version = '0.1.0'
+group = 'com.pyosechang.terminal'
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+compileJava {
+    options.encoding = 'UTF-8'
+}
+
+configurations {
+    shade
+    implementation.extendsFrom shade
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://packages.jetbrains.team/maven/p/ij/intellij-dependencies' }
+}
+
+minecraft {
+    mappings channel: 'official', version: '1.20.1'
+
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                terminal {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        client {
+            property 'forge.enabledGameTestNamespaces', 'terminal'
+            // Add shade jars to Forge's classpath, excluding jars Forge already has
+            lazyToken('minecraft_classpath') {
+                def forgeJarNames = ['annotations', 'jna', 'jna-platform', 'slf4j']
+                configurations.shade.resolve().findAll { file ->
+                    !forgeJarNames.any { name -> file.name.contains(name) }
+                }.collect { it.absolutePath }.join(File.pathSeparator)
+            }
+        }
+
+        server {
+            property 'forge.enabledGameTestNamespaces', 'terminal'
+            args '--nogui'
+        }
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.2.0'
+
+    shade('org.jetbrains.jediterm:jediterm-core:3.49') {
+        transitive = true
+    }
+    shade('org.jetbrains.pty4j:pty4j:0.12.13') {
+        transitive = true
+    }
+}
+
+shadowJar {
+    archiveClassifier = ''
+    configurations = [project.configurations.shade]
+
+    finalizedBy 'reobfShadowJar'
+}
+
+assemble.dependsOn shadowJar
+
+reobf {
+    shadowJar {}
+}
+
+jar {
+    archiveClassifier = 'slim'
+    manifest {
+        attributes([
+            'Specification-Title'   : 'terminal',
+            'Specification-Vendor'  : 'pyosechang',
+            'Specification-Version' : '1',
+            'Implementation-Title'  : project.name,
+            'Implementation-Version': project.jar.archiveVersion,
+            'Implementation-Vendor' : 'pyosechang',
+        ])
+    }
+    finalizedBy 'reobfJar'
+}

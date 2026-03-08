@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "MIT"
+
+[[mods]]
+modId = "terminal"
+version = "${file.jarVersion}"
+displayName = "Minecraft Terminal"
+description = '''
+In-game terminal emulator for Minecraft.
+Open a real OS shell inside Minecraft and run any CLI tool including Claude Code.
+'''
+
+[[dependencies.terminal]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.terminal]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.21)"
+ordering = "NONE"
+side = "CLIENT"
