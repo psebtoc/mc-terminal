@@ -17,12 +17,17 @@ public class TerminalConfig {
     public static final ForgeConfigSpec CLIENT_SPEC;
     public static final ForgeConfigSpec.ConfigValue<String> DEFAULT_DIR;
 
+    public static final ForgeConfigSpec.IntValue GUI_SCALE;
+
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         builder.comment("Terminal global settings").push("general");
         DEFAULT_DIR = builder
                 .comment("Default start directory for new terminal tabs")
                 .define("defaultDir", System.getProperty("user.home"));
+        GUI_SCALE = builder
+                .comment("Terminal GUI scale override (0 = follow Minecraft setting, 1-4 = force specific scale)")
+                .defineInRange("guiScale", 0, 0, 4);
         builder.pop();
         CLIENT_SPEC = builder.build();
     }

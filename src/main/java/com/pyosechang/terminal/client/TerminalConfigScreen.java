@@ -15,6 +15,7 @@ public class TerminalConfigScreen extends Screen {
     private final Screen parentScreen;
     private EditBox defaultDirBox;
     private EditBox worldDirBox;
+    private EditBox guiScaleBox;
 
     public TerminalConfigScreen(Screen parentScreen) {
         super(Component.literal("Terminal Settings"));
@@ -33,6 +34,15 @@ public class TerminalConfigScreen extends Screen {
             defaultDirBox.setValue(TerminalConfig.DEFAULT_DIR.get());
         }
         this.addRenderableWidget(defaultDirBox);
+
+        // GUI Scale override
+        y += 60;
+        guiScaleBox = new EditBox(this.font, centerX - 150, y + 12, 300, 20, Component.literal("GUI Scale"));
+        guiScaleBox.setMaxLength(1);
+        if (TerminalConfig.CLIENT_SPEC.isLoaded()) {
+            guiScaleBox.setValue(String.valueOf(TerminalConfig.GUI_SCALE.get()));
+        }
+        this.addRenderableWidget(guiScaleBox);
 
         // Per-world directory
         y += 60;
@@ -62,6 +72,12 @@ public class TerminalConfigScreen extends Screen {
     private void save() {
         if (TerminalConfig.CLIENT_SPEC.isLoaded()) {
             TerminalConfig.DEFAULT_DIR.set(defaultDirBox.getValue());
+            try {
+                int scale = Integer.parseInt(guiScaleBox.getValue().trim());
+                if (scale >= 0 && scale <= 4) {
+                    TerminalConfig.GUI_SCALE.set(scale);
+                }
+            } catch (NumberFormatException ignored) {}
         }
         if (TerminalConfig.SERVER_SPEC.isLoaded()) {
             TerminalConfig.START_DIR.set(worldDirBox.getValue());
@@ -77,6 +93,9 @@ public class TerminalConfigScreen extends Screen {
         int y = 50;
 
         graphics.drawString(this.font, "Default Start Directory", centerX - 150, y, 0xAAAAAA);
+        y += 60;
+
+        graphics.drawString(this.font, "GUI Scale (0 = follow Minecraft, 1-4 = override)", centerX - 150, y, 0xAAAAAA);
         y += 60;
 
         String worldLabel = TerminalConfig.SERVER_SPEC.isLoaded()
