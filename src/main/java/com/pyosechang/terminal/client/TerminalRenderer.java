@@ -15,7 +15,11 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class TerminalRenderer {
 
@@ -31,6 +35,29 @@ public class TerminalRenderer {
     public static final int DEFAULT_BG = 0xFF0C0C0C;
     private static final int CURSOR_COLOR = 0xFFCCCCCC;
     private static final int SELECTION_BG = 0x55FFFFFF;
+    private static final int LINK_COLOR = 0xFF569CD6;
+
+    // Link detection — URLs break on whitespace; file paths allow spaces
+    private static final Pattern URL_PATTERN = Pattern.compile(
+            "https?://[^\\s<>\"'\\)\\]]+");
+    private static final Pattern PATH_PATTERN = Pattern.compile(
+            "[A-Za-z]:[/\\\\][^\\n<>\"'*?|]+");
+    private static final List<LinkRegion> linkRegions = new ArrayList<>();
+
+    public static class LinkRegion {
+        public final int row, startCol, endCol;
+        public final String url;
+        public LinkRegion(int row, int startCol, int endCol, String url) {
+            this.row = row; this.startCol = startCol; this.endCol = endCol; this.url = url;
+        }
+    }
+
+    public static LinkRegion getLinkAt(int row, int col) {
+        for (LinkRegion lr : linkRegions) {
+            if (lr.row == row && col >= lr.startCol && col < lr.endCol) return lr;
+        }
+        return null;
+    }
 
     // ANSI 16-color palette
     private static final int[] ANSI_PALETTE = {
@@ -50,7 +77,8 @@ public class TerminalRenderer {
     public static void render(GuiGraphics graphics, Font font, TerminalSession session,
                               int x, int y, int cols, int rows,
                               int selStartCol, int selStartRow, int selEndCol, int selEndRow,
-                              boolean hasSelection) {
+                              boolean hasSelection,
+                              int hoverRow, int hoverCol) {
         if (session == null || session.getTextBuffer() == null) return;
 
         TerminalTextBuffer buffer = session.getTextBuffer();
@@ -78,6 +106,39 @@ public class TerminalRenderer {
 
         buffer.lock();
         try {
+            // Pre-pass: scan for links in visible lines
+            linkRegions.clear();
+            for (int row = 0; row < rows; row++) {
+                TerminalLine line = buffer.getLine(row);
+                if (line == null) continue;
+                String text = line.getText();
+                // URLs (no spaces)
+                Matcher um = URL_PATTERN.matcher(text);
+                while (um.find()) {
+                    String url = um.group();
+                    int end = um.end();
+                    while (url.length() > 1 && ".,;:!?)>]".indexOf(url.charAt(url.length() - 1)) >= 0) {
+                        url = url.substring(0, url.length() - 1);
+                        end--;
+                    }
+                    linkRegions.add(new LinkRegion(row, um.start(), end, url));
+                }
+                // File paths (spaces allowed, trim trailing whitespace/punctuation)
+                Matcher pm = PATH_PATTERN.matcher(text);
+                while (pm.find()) {
+                    String path = pm.group();
+                    int end = pm.end();
+                    while (path.length() > 3 && " \t.,;:!?)>]".indexOf(path.charAt(path.length() - 1)) >= 0) {
+                        path = path.substring(0, path.length() - 1);
+                        end--;
+                    }
+                    linkRegions.add(new LinkRegion(row, pm.start(), end, path));
+                }
+            }
+
+            // Determine which link the mouse is hovering over (computed once, not per-cell)
+            final LinkRegion hoveredLink = getLinkAt(hoverRow, hoverCol);
+
             for (int row = 0; row < rows; row++) {
                 TerminalLine line = buffer.getLine(row);
                 if (line == null) continue;
@@ -91,6 +152,9 @@ public class TerminalRenderer {
                     int cellX = x + col * CELL_WIDTH;
                     boolean isCursor = (row == cursorRow && col == cursorCol);
                     boolean isSelected = hasSelection && isInSelection(row, col, sR1, sC1, sR2, sC2);
+                    // Underline only the link the mouse is hovering over
+                    boolean isLink = hoveredLink != null && hoveredLink.row == row
+                            && col >= hoveredLink.startCol && col < hoveredLink.endCol;
 
                     char ch = (col < text.length()) ? text.charAt(col) : 0;
 
@@ -123,12 +187,17 @@ public class TerminalRenderer {
                         if (!hidden) {
                             char renderCh = getFallbackChar(ch);
                             if (renderCh != 0) {
-                                int fg = getForegroundColor(style);
+                                int fg = isLink ? LINK_COLOR : getForegroundColor(style);
                                 Component charComp = Component.literal(String.valueOf(renderCh))
                                         .withStyle(Style.EMPTY.withFont(TERMINAL_FONT));
                                 graphics.drawString(font, charComp, cellX, cellY + 1, fg, false);
                             }
                         }
+                    }
+
+                    // Underline for hovered link
+                    if (isLink) {
+                        graphics.fill(cellX, cellY + CELL_HEIGHT - 1, cellX + cellW, cellY + CELL_HEIGHT, LINK_COLOR);
                     }
 
                     // Thin line cursor (only when terminal reports cursor visible)

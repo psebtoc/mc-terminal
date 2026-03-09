@@ -4,12 +4,15 @@ import com.pyosechang.terminal.terminal.TerminalConfig;
 import com.pyosechang.terminal.terminal.TerminalSession;
 import com.pyosechang.terminal.terminal.TerminalSessionManager;
 import com.pyosechang.terminal.util.KeyMapper;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.File;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 public class TerminalScreen extends Screen {
@@ -190,9 +193,12 @@ public class TerminalScreen extends Screen {
         // Terminal content
         TerminalSession session = TerminalSessionManager.getActive();
         if (session != null) {
+            int hoverCol = (int)((smx - termX) / (float) TerminalRenderer.CELL_WIDTH);
+            int hoverRow = (int)((smy - termY) / (float) TerminalRenderer.CELL_HEIGHT);
             TerminalRenderer.render(graphics, this.font, session,
                     termX, termY, termColumns, termRows,
-                    selStartCol, selStartRow, selEndCol, selEndRow, hasSelection);
+                    selStartCol, selStartRow, selEndCol, selEndRow, hasSelection,
+                    hoverRow, hoverCol);
         }
 
         // Rename overlay
@@ -418,10 +424,13 @@ public class TerminalScreen extends Screen {
             return true;
         }
 
-        // Ctrl+Shift+C = copy
-        if (ctrl && shift && keyCode == GLFW.GLFW_KEY_C) {
-            copySelection();
-            return true;
+        // Ctrl+C: copy if selection exists, otherwise send interrupt to terminal
+        if (ctrl && keyCode == GLFW.GLFW_KEY_C) {
+            if (hasSelection) {
+                copySelection();
+                return true;
+            }
+            // No selection → fall through to send Ctrl+C (interrupt) to terminal
         }
 
         // Ctrl+Shift+V or Ctrl+V = paste
@@ -452,6 +461,10 @@ public class TerminalScreen extends Screen {
             if (ch > 32) renameBuffer.append(ch); // no spaces in tab names
             return true;
         }
+
+        // Ctrl combos are handled in keyPressed — don't double-send characters
+        boolean ctrl = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
+        if (ctrl) return false;
 
         TerminalSession session = TerminalSessionManager.getActive();
         if (session != null && session.isAlive() && ch >= 32) {
@@ -493,10 +506,21 @@ public class TerminalScreen extends Screen {
             }
         }
 
-        // Left click in terminal = start selection
+        // Left click in terminal
         if (button == 0 && isInTerminal(mx, my)) {
             int col = (int)((mx - termX) / TerminalRenderer.CELL_WIDTH);
             int row = (int)((my - termY) / TerminalRenderer.CELL_HEIGHT);
+
+            // Ctrl+click = open link
+            if (hasControlDown()) {
+                TerminalRenderer.LinkRegion link = TerminalRenderer.getLinkAt(row, col);
+                if (link != null) {
+                    openLink(link.url);
+                    return true;
+                }
+            }
+
+            // Start selection
             selStartCol = selEndCol = clamp(col, 0, termColumns - 1);
             selStartRow = selEndRow = clamp(row, 0, termRows - 1);
             selecting = true;
@@ -625,6 +649,22 @@ public class TerminalScreen extends Screen {
                 session.write(clipboard);
             }
         }
+    }
+
+    private void openLink(String url) {
+        try {
+            if (url.startsWith("http://") || url.startsWith("https://")) {
+                Util.getPlatform().openUri(new URI(url));
+            } else {
+                // Local file path — open containing folder in explorer
+                File file = new File(url);
+                if (file.isDirectory()) {
+                    Util.getPlatform().openFile(file);
+                } else if (file.getParentFile() != null && file.getParentFile().isDirectory()) {
+                    Util.getPlatform().openFile(file.getParentFile());
+                }
+            }
+        } catch (Exception ignored) {}
     }
 
     private void clearSelection() {

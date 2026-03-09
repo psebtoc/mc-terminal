@@ -75,6 +75,17 @@ shadowJar {
     archiveClassifier = ''
     configurations = [project.configurations.shade]
 
+    // Exclude libraries that Forge/Minecraft already provides — these cause silent crashes
+    // when duplicated inside a mod JAR in a real modpack environment
+    exclude 'com/sun/jna/**'
+    exclude 'org/slf4j/**'
+    exclude 'org/jetbrains/annotations/**'
+    exclude 'org/intellij/**'
+
+    // Relocate Kotlin to avoid conflicts with other mods that bundle Kotlin
+    relocate 'kotlin', 'com.pyosechang.terminal.shadow.kotlin'
+    relocate 'kotlinx', 'com.pyosechang.terminal.shadow.kotlinx'
+
     finalizedBy 'reobfShadowJar'
 }
 

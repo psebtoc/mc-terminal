@@ -33,13 +33,17 @@ public class HookSetup {
                 // Reads port from hook-server.json and sends hook events to the in-game hook server
 
                 import { readFileSync } from 'fs';
-                import { join } from 'path';
+                import { dirname, join } from 'path';
+                import { fileURLToPath } from 'url';
+
+                // Use script location (not CWD) to find port file reliably
+                // Script lives at <gameDir>/.terminal-mod/hooks/guide-hook.mjs
+                const __dirname = dirname(fileURLToPath(import.meta.url));
 
                 async function main() {
                     let port;
                     try {
-                        const gameDir = process.cwd();
-                        const portFile = join(gameDir, '.terminal-mod', 'hook-server.json');
+                        const portFile = join(__dirname, '..', 'hook-server.json');
                         const data = JSON.parse(readFileSync(portFile, 'utf-8'));
                         port = data.port;
                     } catch {
@@ -68,10 +72,8 @@ public class HookSetup {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload),
                         });
-                        if (!response.ok) {
-                            console.error(`Hook server returned ${response.status}`);
-                        }
-                    } catch (err) {
+                        // Ignore non-200 silently — game may be shutting down
+                    } catch {
                         // Server not running, silently exit
                     }
                 }
@@ -107,7 +109,7 @@ public class HookSetup {
         JsonObject hooks = settings.getAsJsonObject("hooks");
 
         Path hookScript = FMLPaths.GAMEDIR.get().resolve(".terminal-mod/hooks/guide-hook.mjs");
-        String hookCommand = "node " + hookScript.toAbsolutePath().toString().replace("\\", "/");
+        String hookCommand = "node \"" + hookScript.toAbsolutePath().toString().replace("\\", "/") + "\"";
 
         // Register Stop hook
         registerHook(hooks, "Stop", hookCommand);
