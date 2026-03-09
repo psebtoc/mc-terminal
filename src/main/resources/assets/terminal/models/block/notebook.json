@@ -1,0 +1,38 @@
+{
+  "parent": "minecraft:block/block",
+  "textures": {
+    "keyboard": "terminal:block/notebook_keyboard",
+    "screen": "terminal:block/notebook_screen",
+    "body": "terminal:block/notebook_body",
+    "screen_back": "terminal:block/notebook_screen_back",
+    "particle": "terminal:block/notebook_body"
+  },
+  "elements": [
+    {
+      "name": "base",
+      "from": [1, 0, 4],
+      "to": [15, 2, 15],
+      "faces": {
+        "up":    { "texture": "#keyboard", "uv": [1, 4, 15, 15] },
+        "down":  { "texture": "#body", "uv": [1, 4, 15, 15] },
+        "north": { "texture": "#body", "uv": [1, 0, 15, 2] },
+        "south": { "texture": "#body", "uv": [1, 0, 15, 2] },
+        "east":  { "texture": "#body", "uv": [4, 0, 15, 2] },
+        "west":  { "texture": "#body", "uv": [4, 0, 15, 2] }
+      }
+    },
+    {
+      "name": "screen",
+      "from": [1, 2, 2],
+      "to": [15, 11, 4],
+      "faces": {
+        "north": { "texture": "#screen_back", "uv": [1, 5, 15, 14] },
+        "south": { "texture": "#screen", "uv": [1, 5, 15, 14] },
+        "up":    { "texture": "#body", "uv": [1, 2, 15, 4] },
+        "down":  { "texture": "#body", "uv": [1, 2, 15, 4] },
+        "east":  { "texture": "#body", "uv": [2, 5, 4, 14] },
+        "west":  { "texture": "#body", "uv": [2, 5, 4, 14] }
+      }
+    }
+  ]
+}

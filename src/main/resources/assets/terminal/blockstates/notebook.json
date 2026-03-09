@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "terminal:block/notebook" },
+    "facing=south": { "model": "terminal:block/notebook", "y": 180 },
+    "facing=west": { "model": "terminal:block/notebook", "y": 270 },
+    "facing=east": { "model": "terminal:block/notebook", "y": 90 }
+  }
+}
