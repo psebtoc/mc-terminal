@@ -27,6 +27,7 @@ public class TerminalSession {
     private final int columns;
     private final int rows;
     private String name;
+    private String startDirectory;
 
     private PtyProcess process;
     private JediTerminal terminal;
@@ -46,6 +47,8 @@ public class TerminalSession {
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
+    public String getStartDirectory() { return startDirectory; }
+    public void setStartDirectory(String dir) { this.startDirectory = dir; }
 
     public void start() throws IOException {
         String[] cmd;
@@ -66,7 +69,8 @@ public class TerminalSession {
         env.remove("CLAUDECODE");
         env.remove("CLAUDE_CODE_SESSION");
 
-        String startDir = TerminalConfig.getStartDirectory();
+        String startDir = (this.startDirectory != null) ? this.startDirectory : TerminalConfig.getStartDirectory();
+        this.startDirectory = startDir;
 
         PtyProcessBuilder builder = new PtyProcessBuilder()
                 .setCommand(cmd)

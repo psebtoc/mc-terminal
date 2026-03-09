@@ -1,6 +1,7 @@
 package com.pyosechang.terminal.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
+import com.pyosechang.terminal.claude.ClaudeGuideCommand;
 import com.pyosechang.terminal.terminal.TerminalSessionManager;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -25,6 +26,10 @@ public class ClientSetup {
     public static void init(FMLJavaModLoadingContext context) {
         context.getModEventBus().addListener(ClientSetup::registerKeyMappings);
         MinecraftForge.EVENT_BUS.register(new ClientTickHandler());
+        MinecraftForge.EVENT_BUS.addListener(ClaudeGuideCommand::register);
+
+        // Cleanup on game shutdown
+        Runtime.getRuntime().addShutdownHook(new Thread(ClaudeGuideCommand::cleanup, "claude-guide-cleanup"));
 
         // Register config screen for Mods menu
         ModLoadingContext.get().registerExtensionPoint(

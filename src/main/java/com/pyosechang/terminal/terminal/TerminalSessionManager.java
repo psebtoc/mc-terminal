@@ -34,11 +34,18 @@ public class TerminalSessionManager {
     private static int tabCounter = 0;
 
     public static TerminalSession createNewTab(int cols, int rows) {
+        return createNewTab(cols, rows, null);
+    }
+
+    public static TerminalSession createNewTab(int cols, int rows, String startDirectory) {
         TerminalSession session = new TerminalSession(cols, rows);
+        if (startDirectory != null) {
+            session.setStartDirectory(startDirectory);
+        }
         try {
             session.start();
             tabCounter++;
-            session.setName("Terminal " + tabCounter);
+            session.setName("Terminal" + tabCounter);
             sessions.add(session);
             activeIndex = sessions.size() - 1;
             return session;

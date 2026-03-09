@@ -449,7 +449,7 @@ public class TerminalScreen extends Screen {
     @Override
     public boolean charTyped(char ch, int modifiers) {
         if (renaming) {
-            if (ch >= 32) renameBuffer.append(ch);
+            if (ch > 32) renameBuffer.append(ch); // no spaces in tab names
             return true;
         }
 
