@@ -1,6 +1,7 @@
 package com.pyosechang.terminal.client;
 
 import com.pyosechang.terminal.terminal.TerminalConfig;
+import com.mojang.blaze3d.platform.InputConstants;
 import com.pyosechang.terminal.terminal.TerminalSession;
 import com.pyosechang.terminal.terminal.TerminalSessionManager;
 import com.pyosechang.terminal.util.KeyMapper;
@@ -424,7 +425,8 @@ public class TerminalScreen extends Screen {
         }
 
         // Toggle key = close terminal (matches the KeyMapping used to open it)
-        if (ClientSetup.TOGGLE_TERMINAL.matches(keyCode, scanCode)) {
+        InputConstants.Key inputKey = InputConstants.Type.KEYSYM.getOrCreate(keyCode);
+        if (ClientSetup.TOGGLE_TERMINAL.isActiveAndMatches(inputKey)) {
             this.onClose();
             return true;
         }
@@ -505,10 +507,10 @@ public class TerminalScreen extends Screen {
             session.write(bytes);
             clearSelection();
             scrollOffset = 0; // snap to bottom on input
-            return true;
         }
 
-        return false;
+        // Always consume key events — prevent Minecraft from handling them
+        return true;
     }
 
     @Override

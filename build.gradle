@@ -34,6 +34,8 @@ minecraft {
             workingDirectory project.file('run')
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${project.buildDir}/createSrgToMcp/output.srg"
 
             mods {
                 terminal {
@@ -44,6 +46,7 @@ minecraft {
 
         client {
             property 'forge.enabledGameTestNamespaces', 'terminal'
+            arg '-mixin.config=terminal.mixins.json'
             // Add shade jars to Forge's classpath, excluding jars Forge already has
             lazyToken('minecraft_classpath') {
                 def forgeJarNames = ['annotations', 'jna', 'jna-platform', 'slf4j']

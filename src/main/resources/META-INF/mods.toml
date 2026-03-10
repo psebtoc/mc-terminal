@@ -2,6 +2,9 @@ modLoader = "javafml"
 loaderVersion = "[47,)"
 license = "MIT"
 
+[[mixins]]
+config = "terminal.mixins.json"
+
 [[mods]]
 modId = "terminal"
 version = "${file.jarVersion}"
