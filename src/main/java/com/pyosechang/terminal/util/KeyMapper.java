@@ -74,7 +74,7 @@ public class KeyMapper {
                 return new byte[]{0x1b, '[', '2', '1', '~'};
             case GLFW.GLFW_KEY_F11:
                 return new byte[]{0x1b, '[', '2', '3', '~'};
-            // F12 is our toggle key, don't send to terminal
+            // F12 is the default toggle key, don't send to terminal
             default:
                 return null;
         }

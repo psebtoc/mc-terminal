@@ -1,4 +1,6 @@
 {
   "block.terminal.notebook": "Terminal Notebook",
-  "item.terminal.notebook": "Terminal Notebook"
+  "item.terminal.notebook": "Terminal Notebook",
+  "key.categories.terminal": "Terminal",
+  "key.terminal.toggle": "Open/Close Terminal"
 }

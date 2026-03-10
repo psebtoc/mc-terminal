@@ -7,6 +7,8 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
+import net.minecraftforge.client.settings.KeyConflictContext;
+import net.minecraftforge.client.settings.KeyModifier;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -18,8 +20,9 @@ public class ClientSetup {
 
     public static final KeyMapping TOGGLE_TERMINAL = new KeyMapping(
             "key.terminal.toggle",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_F12,
+            KeyConflictContext.IN_GAME,
+            KeyModifier.CONTROL,
+            InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_T),
             "key.categories.terminal"
     );
 

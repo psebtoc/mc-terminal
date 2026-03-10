@@ -68,6 +68,9 @@ public class TerminalScreen extends Screen {
     // Title bar button hover
     private int hoveredTitleBtn = -1; // 0=minimize, 1=maximize, 2=close
 
+    // Scroll
+    private int scrollOffset = 0;
+
     // Tab rename
     private boolean renaming = false;
     private int renamingTab = -1;
@@ -198,7 +201,10 @@ public class TerminalScreen extends Screen {
             TerminalRenderer.render(graphics, this.font, session,
                     termX, termY, termColumns, termRows,
                     selStartCol, selStartRow, selEndCol, selEndRow, hasSelection,
-                    hoverRow, hoverCol);
+                    hoverRow, hoverCol, scrollOffset);
+
+            // Scrollbar
+            renderScrollbar(graphics, session);
         }
 
         // Rename overlay
@@ -324,6 +330,30 @@ public class TerminalScreen extends Screen {
         graphics.drawString(this.font, "+", newTabX, tabY + 4, plusColor, false);
     }
 
+    private void renderScrollbar(GuiGraphics graphics, TerminalSession session) {
+        if (session.getTextBuffer() == null) return;
+        int historyLines = session.getTextBuffer().getHistoryBuffer().getLineCount();
+        if (historyLines <= 0) return;
+
+        int totalLines = historyLines + termRows;
+        int trackX = winX + winW - PADDING / 2 - 3;
+        int trackY = termY;
+        int trackH = termRows * TerminalRenderer.CELL_HEIGHT;
+        int barW = 3;
+
+        // Track background
+        graphics.fill(trackX, trackY, trackX + barW, trackY + trackH, 0x33FFFFFF);
+
+        // Thumb size and position
+        float visibleRatio = (float) termRows / totalLines;
+        int thumbH = Math.max((int)(trackH * visibleRatio), 8);
+        float scrollRatio = (float) scrollOffset / historyLines;
+        int thumbY = trackY + (int)((trackH - thumbH) * (1.0f - scrollRatio));
+
+        int thumbColor = scrollOffset > 0 ? 0xAABBBBBB : 0x66888888;
+        graphics.fill(trackX, thumbY, trackX + barW, thumbY + thumbH, thumbColor);
+    }
+
     private void renderRenameOverlay(GuiGraphics graphics) {
         if (renamingTab < 0 || renamingTab >= tabXPositions.length) return;
         int tx = tabXPositions[renamingTab];
@@ -393,21 +423,21 @@ public class TerminalScreen extends Screen {
             return true;
         }
 
-        // F12 = toggle (minimize/close)
-        if (keyCode == GLFW.GLFW_KEY_F12) {
+        // Toggle key = close terminal (matches the KeyMapping used to open it)
+        if (ClientSetup.TOGGLE_TERMINAL.matches(keyCode, scanCode)) {
             this.onClose();
             return true;
         }
 
-        // Ctrl+T = new tab
-        if (ctrl && !shift && keyCode == GLFW.GLFW_KEY_T) {
+        // Ctrl+Shift+T = new tab
+        if (ctrl && shift && keyCode == GLFW.GLFW_KEY_T) {
             TerminalSessionManager.createNewTab(termColumns, termRows);
             clearSelection();
             return true;
         }
 
-        // Ctrl+W = close tab
-        if (ctrl && !shift && keyCode == GLFW.GLFW_KEY_W) {
+        // Ctrl+Shift+W = close tab
+        if (ctrl && shift && keyCode == GLFW.GLFW_KEY_W) {
             TerminalSessionManager.closeActiveTab();
             if (TerminalSessionManager.getTabCount() == 0) this.onClose();
             clearSelection();
@@ -419,8 +449,33 @@ public class TerminalScreen extends Screen {
             if (shift) TerminalSessionManager.prevTab();
             else TerminalSessionManager.nextTab();
             clearSelection();
+            scrollOffset = 0;
             TerminalSession s = TerminalSessionManager.getActive();
             if (s != null && s.isAlive()) s.resize(termColumns, termRows);
+            return true;
+        }
+
+        // Ctrl+Alt+[1-9] = switch to Nth tab
+        boolean alt = (modifiers & GLFW.GLFW_MOD_ALT) != 0;
+        if (ctrl && alt && keyCode >= GLFW.GLFW_KEY_1 && keyCode <= GLFW.GLFW_KEY_9) {
+            int tabIndex = keyCode - GLFW.GLFW_KEY_1;
+            if (tabIndex < TerminalSessionManager.getTabCount()) {
+                TerminalSessionManager.switchTo(tabIndex);
+                clearSelection();
+                scrollOffset = 0;
+                TerminalSession s = TerminalSessionManager.getActive();
+                if (s != null && s.isAlive()) s.resize(termColumns, termRows);
+            }
+            return true;
+        }
+
+        // Shift+PageUp/PageDown = scroll history
+        if (shift && keyCode == GLFW.GLFW_KEY_PAGE_UP) {
+            scrollUp(termRows);
+            return true;
+        }
+        if (shift && keyCode == GLFW.GLFW_KEY_PAGE_DOWN) {
+            scrollDown(termRows);
             return true;
         }
 
@@ -449,6 +504,7 @@ public class TerminalScreen extends Screen {
         if (bytes != null) {
             session.write(bytes);
             clearSelection();
+            scrollOffset = 0; // snap to bottom on input
             return true;
         }
 
@@ -470,6 +526,7 @@ public class TerminalScreen extends Screen {
         if (session != null && session.isAlive() && ch >= 32) {
             session.write(String.valueOf(ch).getBytes(StandardCharsets.UTF_8));
             clearSelection();
+            scrollOffset = 0; // snap to bottom on input
             return true;
         }
         return super.charTyped(ch, modifiers);
@@ -553,7 +610,24 @@ public class TerminalScreen extends Screen {
 
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+        int lines = 3; // scroll 3 lines per tick
+        if (delta > 0) {
+            scrollUp(lines);
+        } else if (delta < 0) {
+            scrollDown(lines);
+        }
         return true;
+    }
+
+    private void scrollUp(int lines) {
+        TerminalSession session = TerminalSessionManager.getActive();
+        if (session == null || session.getTextBuffer() == null) return;
+        int maxScroll = session.getTextBuffer().getHistoryBuffer().getLineCount();
+        scrollOffset = Math.min(scrollOffset + lines, maxScroll);
+    }
+
+    private void scrollDown(int lines) {
+        scrollOffset = Math.max(scrollOffset - lines, 0);
     }
 
     // ---- Tab helpers ----

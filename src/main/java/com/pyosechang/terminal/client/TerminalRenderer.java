@@ -78,7 +78,7 @@ public class TerminalRenderer {
                               int x, int y, int cols, int rows,
                               int selStartCol, int selStartRow, int selEndCol, int selEndRow,
                               boolean hasSelection,
-                              int hoverRow, int hoverCol) {
+                              int hoverRow, int hoverCol, int scrollOffset) {
         if (session == null || session.getTextBuffer() == null) return;
 
         TerminalTextBuffer buffer = session.getTextBuffer();
@@ -109,7 +109,8 @@ public class TerminalRenderer {
             // Pre-pass: scan for links in visible lines
             linkRegions.clear();
             for (int row = 0; row < rows; row++) {
-                TerminalLine line = buffer.getLine(row);
+                int bufferRow = row - scrollOffset;
+                TerminalLine line = getLineFromBuffer(buffer, bufferRow);
                 if (line == null) continue;
                 String text = line.getText();
                 // URLs (no spaces)
@@ -139,8 +140,15 @@ public class TerminalRenderer {
             // Determine which link the mouse is hovering over (computed once, not per-cell)
             final LinkRegion hoveredLink = getLinkAt(hoverRow, hoverCol);
 
+            // Hide cursor when scrolled up (viewing history)
+            if (scrollOffset > 0) {
+                cursorCol = -1;
+                cursorRow = -1;
+            }
+
             for (int row = 0; row < rows; row++) {
-                TerminalLine line = buffer.getLine(row);
+                int bufferRow = row - scrollOffset;
+                TerminalLine line = getLineFromBuffer(buffer, bufferRow);
                 if (line == null) continue;
 
                 String text = line.getText();
@@ -210,6 +218,25 @@ public class TerminalRenderer {
             }
         } finally {
             buffer.unlock();
+        }
+    }
+
+    /**
+     * Get a line from the buffer, supporting negative indices for history (scrollback).
+     * Row 0+ = screen buffer, row -1 = most recent history line, etc.
+     */
+    private static TerminalLine getLineFromBuffer(TerminalTextBuffer buffer, int row) {
+        try {
+            if (row >= 0) {
+                return buffer.getLine(row);
+            } else {
+                // Negative row: access history via getLine (jediterm supports this)
+                int historySize = buffer.getHistoryBuffer().getLineCount();
+                if (-row > historySize) return null;
+                return buffer.getLine(row);
+            }
+        } catch (Exception e) {
+            return null;
         }
     }
 
